@@ -45,5 +45,10 @@ Its main application is the **creation of impulse responses (IRs)** of different
 - **C/C++** for Arduino firmware.  
 
 ### Author
-- Dalmaso Sebastián Martín Student of **Electronics Engineering - UTN FRM**  
+- Dalmaso Sebastián Martín Student of **Electronics Engineering - UTN FRM**
+  
+### Esquemático del proyecto / Project Schematic
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/eaed3151-d4b1-4a53-bb79-a4f5184a7312" alt="Esquemático del sistema" width="700">
+</p>

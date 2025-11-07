@@ -50,5 +50,5 @@ Its main application is the **creation of impulse responses (IRs)** of different
 ### Esquemático del proyecto / Project Schematic
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/eaed3151-d4b1-4a53-bb79-a4f5184a7312" alt="Esquemático del sistema" width="700">
+  <img src="https://github.com/sebastiandalmaso/TRABAJO-FINAL-INFORMATICA-II_ROBOT_MICROFONO/blob/0a8a4086c602b67d347701999a8b341ee2d2cc97/ESQUEM%C3%81TICO%20PROYECTO%20MIC-ROBOT%20INF%20II.png" alt="Esquemático del sistema" width="700">
 </p>

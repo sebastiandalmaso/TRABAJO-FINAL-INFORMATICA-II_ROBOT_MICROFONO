@@ -21,6 +21,10 @@
 #define ACCELERATION 500
 #define STEP_INCREMENT 400
 
+// LÍMITES MÁXIMOS FIJOS
+const long LIMITE_MAX_X = 27000;
+const long LIMITE_MAX_Y = 17000;
+
 AccelStepper motorX(AccelStepper::DRIVER, X_STEP_PIN, X_DIR_PIN);
 AccelStepper motorY(AccelStepper::DRIVER, Y_STEP_PIN, Y_DIR_PIN);
 
@@ -117,6 +121,10 @@ void setup() {
   sensorDHT.iniciar();
   
   Serial.println("Sistema iniciado");
+  Serial.print("Limites: X=");
+  Serial.print(LIMITE_MAX_X);
+  Serial.print(" Y=");
+  Serial.println(LIMITE_MAX_Y);
 }
 
 void calibrarMotor(AccelStepper &motor, int pinFinCarrera, bool &calibrado) {
@@ -139,6 +147,21 @@ void moverAPosicion(long targetX, long targetY) {
   Serial.print(targetX);
   Serial.print(" Y:");
   Serial.println(targetY);
+  
+  // Verificar límites antes de mover
+  if (targetX < 0 || targetX > LIMITE_MAX_X) {
+    Serial.print("ERROR: X fuera de límites (0-");
+    Serial.print(LIMITE_MAX_X);
+    Serial.println(")");
+    return;
+  }
+  
+  if (targetY < 0 || targetY > LIMITE_MAX_Y) {
+    Serial.print("ERROR: Y fuera de límites (0-");
+    Serial.print(LIMITE_MAX_Y);
+    Serial.println(")");
+    return;
+  }
   
   if (calibradoX && calibradoY) {
     motorX.moveTo(targetX);
@@ -175,19 +198,47 @@ void procesarComando() {
         break;
         
       case 'A': // Motor X adelante
-        if (calibradoX) motorX.move(STEP_INCREMENT);
+        if (calibradoX) {
+          long nuevaPosX = motorX.currentPosition() + STEP_INCREMENT;
+          if (nuevaPosX <= LIMITE_MAX_X) {
+            motorX.move(STEP_INCREMENT);
+          } else {
+            Serial.println("LIMITE: X en máximo");
+          }
+        }
         break;
         
       case 'B': // Motor X atrás
-        if (calibradoX) motorX.move(-STEP_INCREMENT);
+        if (calibradoX) {
+          long nuevaPosX = motorX.currentPosition() - STEP_INCREMENT;
+          if (nuevaPosX >= 0) {
+            motorX.move(-STEP_INCREMENT);
+          } else {
+            Serial.println("LIMITE: X en mínimo");
+          }
+        }
         break;
         
       case 'D': // Motor Y adelante
-        if (calibradoY) motorY.move(STEP_INCREMENT);
+        if (calibradoY) {
+          long nuevaPosY = motorY.currentPosition() + STEP_INCREMENT;
+          if (nuevaPosY <= LIMITE_MAX_Y) {
+            motorY.move(STEP_INCREMENT);
+          } else {
+            Serial.println("LIMITE: Y en máximo");
+          }
+        }
         break;
         
       case 'E': // Motor Y atrás
-        if (calibradoY) motorY.move(-STEP_INCREMENT);
+        if (calibradoY) {
+          long nuevaPosY = motorY.currentPosition() - STEP_INCREMENT;
+          if (nuevaPosY >= 0) {
+            motorY.move(-STEP_INCREMENT);
+          } else {
+            Serial.println("LIMITE: Y en mínimo");
+          }
+        }
         break;
         
       case 'P': // Enviar posición actual

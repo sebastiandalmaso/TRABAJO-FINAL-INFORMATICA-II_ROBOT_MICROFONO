@@ -48,8 +48,8 @@ Button btnXAtras;
 Button btnYAdelante;
 Button btnYAtras;
 
-// Botón de guardado
-Button btnGuardarPos;
+// Botón de posición aleatoria
+Button btnPosicionAleatoria;
 
 // Control de botones presionados continuamente
 boolean btnXAdelantePresionado = false;
@@ -57,13 +57,20 @@ boolean btnXAtrasPresionado = false;
 boolean btnYAdelantePresionado = false;
 boolean btnYAtrasPresionado = false;
 int ultimoEnvioMovimiento = 0;
-int intervaloMovimiento = 100; // Enviar comando cada 100ms mientras esté presionado
+int intervaloMovimiento = 100;
+
+// Archivo de slots
+final String ARCHIVO_SLOTS = "slots_posiciones.dat";
 
 void setup() {
   size(1220, 650);
   P = loadImage("utn_logo.png");
+  
   // Inicializar lista de posiciones
   listaPosiciones = new ListaPosiciones(6);
+  
+  // Intentar cargar archivo de slots existente
+  listaPosiciones.cargarDesdeArchivo(ARCHIVO_SLOTS);
   
   // Conectar con Arduino
   try {
@@ -85,8 +92,8 @@ void setup() {
   btnYAdelante = new Button(450, 250, 80, 50, "Y →", color(100, 255, 100));
   btnYAtras = new Button(450, 310, 80, 50, "Y ←", color(100, 255, 100));
   
-  // Botón de guardado
-  btnGuardarPos = new Button(900, 50, 270, 50, "GUARDAR POSICIÓN", color(255, 200, 100));
+  // Botón de posición aleatoria
+  btnPosicionAleatoria = new Button(900, 50, 270, 50, "IR A POSICIÓN ALEATORIA", color(255, 150, 50));
 }
 
 void draw() {
@@ -145,17 +152,14 @@ void dibujarPantallaCalibracion() {
   text("Los motores deben ser calibrados antes de operar", width/2, 200);
   
   if (!calibracionIniciada) {
-    // Mostrar botón de iniciar calibración solo si está conectado
     if (conectado) {
       btnIniciarCalibracion.display();
       
-      // Instrucciones
       fill(150);
       textSize(16);
       text("La calibración moverá los motores hasta los finales de carrera", width/2, 500);
       text("Asegúrate de que el área esté despejada", width/2, 525);
     } else {
-      // Mensaje de advertencia si no está conectado
       fill(255, 100, 100);
       textSize(24);
       text("Arduino no conectado  :(", width/2, 350);
@@ -165,24 +169,20 @@ void dibujarPantallaCalibracion() {
       text("Conecta el Arduino y reinicia la aplicación", width/2, 390);
     }
   } else {
-    // Mostrar progreso de calibración
     fill(255);
     textSize(24);
     text(mensajeCalibracion, width/2, 280);
     
-    // Barra de progreso
     float barWidth = 600;
     float barHeight = 40;
     float barX = (width - barWidth) / 2;
     float barY = 320;
     
-    // Fondo de la barra
     noFill();
     stroke(255);
     strokeWeight(3);
     rect(barX, barY, barWidth, barHeight, 5);
     
-    // Relleno de progreso
     noStroke();
     if (motorXCalibrado && motorYCalibrado) {
       fill(100, 255, 100);
@@ -193,12 +193,10 @@ void dibujarPantallaCalibracion() {
     }
     rect(barX + 3, barY + 3, (barWidth - 6) * progresoCalibracion, barHeight - 6, 5);
     
-    // Porcentaje
     fill(255);
     textSize(20);
     text(int(progresoCalibracion * 100) + "%", width/2, barY + barHeight + 35);
     
-    // Estado de motores
     textSize(16);
     fill(motorXCalibrado ? color(100, 255, 100) : color(150));
     text("Motor X: " + (motorXCalibrado ? "✓ Calibrado" : "En proceso..."), width/2 - 150, 420);
@@ -206,7 +204,6 @@ void dibujarPantallaCalibracion() {
     fill(motorYCalibrado ? color(100, 255, 100) : color(150));
     text("Motor Y: " + (motorYCalibrado ? "✓ Calibrado" : "En proceso..."), width/2 + 150, 420);
     
-    // Actualizar progreso
     actualizarProgresoCalibracion();
   }
   
@@ -218,7 +215,6 @@ void actualizarProgresoCalibracion() {
     progresoCalibracion = 1.0;
     mensajeCalibracion = "¡Calibración completada!";
     
-    // Transición al estado operacional después de 1 segundo
     if (progresoCalibracion >= 1.0 && millis() % 2000 < 50) {
       estadoActual = Estado.OPERACIONAL;
       println("Sistema listo para operar");
@@ -233,30 +229,27 @@ void actualizarProgresoCalibracion() {
 }
 
 void dibujarInterfazPrincipal() {
-  // Actualización automática de posición
   if (conectado && millis() - ultimaActualizacion > intervaloActualizacion) {
     puerto.write("P\n");
     ultimaActualizacion = millis();
   }
-  //Título 1
+  
   fill(255);
   textAlign(CENTER);
   textSize(24);
   text("Trabajo Final Informática II - Robot para micrófono", 300, 50);
   
-  // Título 2
   fill(255);
   textAlign(CENTER);
   textSize(24);
   text("Control Motores Paso a Paso", 300, 100);
   
-  // Estado conexión
   textSize(20);
   fill(conectado ? color(100, 255, 100) : color(255, 100, 100));
   text(conectado ? "Estado: Conectado" : "Estado: Desconectado", 1030, 30);
-  //Imagen logo UTN FRM
+  
   image(P,887,150);
-  //Nombre
+  
   fill(255);
   textSize(20);
   text("Realizado por",1030,250);
@@ -266,7 +259,7 @@ void dibujarInterfazPrincipal() {
   fill(255);
   textSize(20);
   text("Legajo: 50864 - Ciclo Lectivo 2025",1030,300);
-  // Sección Motor X
+  
   fill(255);
   textSize(18);
   textAlign(LEFT);
@@ -275,10 +268,8 @@ void dibujarInterfazPrincipal() {
   text("Posición: " + posX + " pasos", 80, 165);
   text("Límite: " + LIMITE_MAX_X + " pasos", 80, 185);
   
-  // Barra de progreso X
   drawProgressBar(80, 200, 180, 20, posX, LIMITE_MAX_X, color(100, 200, 255));
   
-  // Sección Motor Y
   textSize(18);
   textAlign(LEFT);
   text("Motor Y", 430, 140);
@@ -286,21 +277,16 @@ void dibujarInterfazPrincipal() {
   text("Posición: " + posY + " pasos", 430, 165);
   text("Límite: " + LIMITE_MAX_Y + " pasos", 430, 185);
   
-  // Barra de progreso Y
   drawProgressBar(430, 200, 180, 20, posY, LIMITE_MAX_Y, color(100, 255, 100));
   
-  // Panel del sensor DHT11
   drawSensorPanel();
-  
-  // Panel de posiciones guardadas
   drawPosicionesPanel();
   
-  // Dibujar botones
   btnXAdelante.display();
   btnXAtras.display();
   btnYAdelante.display();
   btnYAtras.display();
-  btnGuardarPos.display();
+  btnPosicionAleatoria.display();
 }
 
 void drawPosicionesPanel() {
@@ -440,12 +426,17 @@ void mousePressed() {
   
   if (!conectado) return;
   
+  // Verificar botón de posición aleatoria
+  if (btnPosicionAleatoria.isPressed(mouseX, mouseY)) {
+    irAPosicionAleatoria();
+    return;
+  }
+  
   int slotIndex = listaPosiciones.verificarClick(mouseX, mouseY);
   if (slotIndex >= 0) {
     return;
   }
   
-  // Detectar presión de botones de movimiento
   if (btnXAdelante.isPressed(mouseX, mouseY)) {
     btnXAdelantePresionado = true;
     if (posX < LIMITE_MAX_X) {
@@ -470,14 +461,10 @@ void mousePressed() {
       puerto.write("E\n");
       ultimoEnvioMovimiento = millis();
     }
-  } else if (btnGuardarPos.isPressed(mouseX, mouseY)) {
-    puerto.write("P\n");
-    guardarPosicion();
   }
 }
 
 void mouseReleased() {
-  // Liberar todos los botones de movimiento
   btnXAdelantePresionado = false;
   btnXAtrasPresionado = false;
   btnYAdelantePresionado = false;
@@ -498,28 +485,42 @@ void iniciarCalibracion() {
   }
 }
 
-void guardarPosicion() {
-  selectOutput("Guardar posición como:", "archivoGuardado");
+void irAPosicionAleatoria() {
+  if (!conectado) {
+    println("ERROR: No hay conexión con Arduino");
+    return;
+  }
+  
+  // Generar posición aleatoria dentro de los límites
+  long randomX = (long)random(0, LIMITE_MAX_X);
+  long randomY = (long)random(0, LIMITE_MAX_Y);
+  
+  // Enviar comando al Arduino
+  String comando = "G:" + randomX + "," + randomY + "\n";
+  puerto.write(comando);
+  
+  println("═══════════════════════════════════════");
+  println(" POSICIÓN ALEATORIA GENERADA");
+  println("   X: " + randomX + " pasos");
+  println("   Y: " + randomY + " pasos");
+  println("   Comando enviado: " + comando.trim());
+  println("═══════════════════════════════════════");
 }
 
-void archivoGuardado(File selection) {
-  if (selection == null) {
-    println("Guardado cancelado");
-  } else {
+// Callbacks para carga y guardado de archivos
+void cargarArchivoSlots(File selection) {
+  if (selection != null) {
+    listaPosiciones.cargarDesdeArchivo(selection.getAbsolutePath());
+  }
+}
+
+void guardarArchivoSlots(File selection) {
+  if (selection != null) {
     String filename = selection.getAbsolutePath();
-    if (!filename.endsWith(".pos")) {
-      filename += ".pos";
+    if (!filename.endsWith(".dat")) {
+      filename += ".dat";
     }
-    
-    String[] data = {
-      "X:" + posX,
-      "Y:" + posY,
-      "LX:" + LIMITE_MAX_X,
-      "LY:" + LIMITE_MAX_Y
-    };
-    
-    saveStrings(filename, data);
-    println("Posición guardada: " + filename);
+    listaPosiciones.guardarEnArchivo(filename);
   }
 }
 
@@ -609,40 +610,16 @@ class NodoPosicion {
     this.siguiente = null;
   }
   
-  void cargarArchivo(String archivo) {
-    String[] data = loadStrings(archivo);
-    
-    for (String line : data) {
-      if (line.startsWith("X:")) {
-        posX = Long.parseLong(line.substring(2));
-      } else if (line.startsWith("Y:")) {
-        posY = Long.parseLong(line.substring(2));
-      }
-    }
-    
-    String nombreArchivo = archivo;
-    
-    if (archivo.contains("\\")) {
-      String[] partes = split(archivo, '\\');
-      nombreArchivo = partes[partes.length - 1];
-    } else if (archivo.contains("/")) {
-      String[] partes = split(archivo, '/');
-      nombreArchivo = partes[partes.length - 1];
-    }
-    
-    nombre = nombreArchivo.replace(".pos", "");
-    ocupado = true;
-    
+  void actualizarPosicion(String nom, long x, long y) {
+    this.nombre = nom;
+    this.posX = x;
+    this.posY = y;
+    this.ocupado = true;
+    verificarLimites();
+  }
+  
+  void verificarLimites() {
     fueraLimites = (posX > LIMITE_MAX_X || posY > LIMITE_MAX_Y || posX < 0 || posY < 0);
-    
-    if (fueraLimites) {
-      println("¡ADVERTENCIA Slot " + indice + ": ¡Posición fuera de límites!");
-      println("  Archivo: " + nombre);
-      println("  Posición: X=" + posX + " Y=" + posY);
-      println("  Límites: X=" + LIMITE_MAX_X + " Y=" + LIMITE_MAX_Y);
-    } else {
-      println("✓ Slot " + indice + " cargado: " + nombre + " (X:" + posX + ", Y:" + posY + ")");
-    }
   }
   
   void irAPosicion() {
@@ -654,8 +631,6 @@ class NodoPosicion {
     if (fueraLimites) {
       println("ERROR: No se puede ir a la posición del Slot " + indice);
       println("La posición excede los límites configurados");
-      println("Posición: X=" + posX + " Y=" + posY);
-      println("Límites: X=" + LIMITE_MAX_X + " Y=" + LIMITE_MAX_Y);
       return;
     }
     
@@ -666,8 +641,7 @@ class NodoPosicion {
     
     String comando = "G:" + posX + "," + posY + "\n";
     puerto.write(comando);
-    println("Comando enviado: " + comando.trim());
-    println("Yendo a posición Slot " + indice + ": " + nombre + " (X:" + posX + ", Y:" + posY + ")");
+    println("Yendo a posición Slot " + indice + ": " + nombre);
   }
   
   void limpiar() {
@@ -677,6 +651,22 @@ class NodoPosicion {
     ocupado = false;
     fueraLimites = false;
     println("Slot " + indice + " limpiado");
+  }
+  
+  String serializar() {
+    return indice + "|" + nombre + "|" + posX + "|" + posY + "|" + ocupado;
+  }
+  
+  void deserializar(String data) {
+    String[] partes = split(data, '|');
+    if (partes.length == 5) {
+      indice = Integer.parseInt(partes[0]);
+      nombre = partes[1];
+      posX = Long.parseLong(partes[2]);
+      posY = Long.parseLong(partes[3]);
+      ocupado = Boolean.parseBoolean(partes[4]);
+      verificarLimites();
+    }
   }
 }
 
@@ -720,6 +710,51 @@ class ListaPosiciones {
       contador++;
     }
     return null;
+  }
+  
+  void guardarEnArchivo(String filename) {
+    ArrayList<String> lineas = new ArrayList<String>();
+    NodoPosicion actual = cabeza;
+    
+    while (actual != null) {
+      lineas.add(actual.serializar());
+      actual = actual.siguiente;
+    }
+    
+    String[] data = lineas.toArray(new String[lineas.size()]);
+    saveStrings(filename, data);
+    println("✓ Archivo guardado: " + filename);
+    println("  Slots guardados: " + lineas.size());
+  }
+  
+  void cargarDesdeArchivo(String filename) {
+    File f = new File(sketchPath(filename));
+    if (!f.exists()) {
+      println("Archivo no encontrado: " + filename);
+      return;
+    }
+    
+    String[] lineas = loadStrings(filename);
+    if (lineas == null || lineas.length == 0) {
+      println("Archivo vacío o error al leer: " + filename);
+      return;
+    }
+    
+    println("Cargando archivo: " + filename);
+    NodoPosicion actual = cabeza;
+    int lineaIdx = 0;
+    
+    while (actual != null && lineaIdx < lineas.length) {
+      actual.deserializar(lineas[lineaIdx]);
+      if (actual.ocupado) {
+        println("  Slot " + actual.indice + ": " + actual.nombre + 
+                " (X:" + actual.posX + ", Y:" + actual.posY + ")");
+      }
+      actual = actual.siguiente;
+      lineaIdx++;
+    }
+    
+    println("✓ Archivo cargado exitosamente");
   }
   
   void dibujar(float startX, float startY) {
@@ -818,13 +853,15 @@ class ListaPosiciones {
       textSize(10);
       text("BORRAR", x + slotWidth/2, y + btnBorrarY + 13);
     } else {
-      fill(150);
+      // Slot vacío - mostrar botón de guardar posición actual
+      fill(100, 255, 100);
       noStroke();
-      rect(x + 40, y + 70, 100, 40, 5);
-      fill(255);
+      rect(x + 10, y + 70, slotWidth - 20, 35, 5);
+      fill(0);
       textAlign(CENTER);
-      textSize(14);
-      text("CARGAR", x + 90, y + 93);
+      textSize(12);
+      text("GUARDAR", x + slotWidth/2, y + 87);
+      text("POS. ACTUAL", x + slotWidth/2, y + 101);
     }
     
     strokeWeight(1);
@@ -842,6 +879,7 @@ class ListaPosiciones {
       
       if (mx > x && mx < x + slotWidth && my > y && my < y + slotHeight) {
         if (actual.ocupado) {
+          // Botón IR A POSICIÓN
           if (!actual.fueraLimites) {
             if (mx > x + 10 && mx < x + slotWidth - 10 && my > y + 105 && my < y + 133) {
               actual.irAPosicion();
@@ -849,14 +887,17 @@ class ListaPosiciones {
             }
           }
           
+          // Botón BORRAR
           int btnBorrarY = actual.fueraLimites ? 153 : 138;
           if (mx > x + 10 && mx < x + slotWidth - 10 && my > y + btnBorrarY && my < y + btnBorrarY + 18) {
             actual.limpiar();
+            guardarEnArchivo(ARCHIVO_SLOTS);
             return actual.indice;
           }
         } else {
-          if (mx > x + 40 && mx < x + 140 && my > y + 70 && my < y + 110) {
-            selectInput("Cargar posición en Slot " + actual.indice, "archivoSeleccionadoEnSlot");
+          // Botón GUARDAR POSICIÓN ACTUAL (slot vacío)
+          if (mx > x + 10 && mx < x + slotWidth - 10 && my > y + 70 && my < y + 105) {
+            guardarPosicionActualEnSlot(actual);
             return actual.indice;
           }
         }
@@ -868,26 +909,35 @@ class ListaPosiciones {
     
     return -1;
   }
-}
-
-void archivoSeleccionadoEnSlot(File selection) {
-  if (selection != null) {
-    NodoPosicion actual = listaPosiciones.cabeza;
-    int contador = 1;
+  
+  void guardarPosicionActualEnSlot(NodoPosicion nodo) {
+    // Pedir nombre para la posición
+    String nombre = javax.swing.JOptionPane.showInputDialog(
+      null,
+      "Ingrese un nombre para esta posición:",
+      "Slot " + nodo.indice,
+      javax.swing.JOptionPane.PLAIN_MESSAGE
+    );
     
-    while (actual != null) {
-      if (!actual.ocupado) {
-        actual.cargarArchivo(selection.getAbsolutePath());
-        println("Archivo cargado en Slot " + contador);
-        return;
-      }
-      actual = actual.siguiente;
-      contador++;
-    }
-    
-    if (listaPosiciones.cabeza != null) {
-      listaPosiciones.cabeza.cargarArchivo(selection.getAbsolutePath());
-      println("Todos los slots ocupados, reemplazando Slot 1");
+    if (nombre != null && nombre.trim().length() > 0) {
+      nodo.actualizarPosicion(nombre.trim(), posX, posY);
+      println("✓ Posición guardada en Slot " + nodo.indice);
+      println("  Nombre: " + nombre);
+      println("  X: " + posX + ", Y: " + posY);
+      
+      // Guardar automáticamente en archivo
+      guardarEnArchivo(ARCHIVO_SLOTS);
+    } else {
+      println("Guardado cancelado (nombre vacío)");
     }
   }
+}
+
+// Al cerrar el programa, guardar automáticamente
+void exit() {
+  if (listaPosiciones != null) {
+    println("Guardando cambios al cerrar...");
+    listaPosiciones.guardarEnArchivo(ARCHIVO_SLOTS);
+  }
+  super.exit();
 }
